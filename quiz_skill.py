@@ -1,5 +1,6 @@
 import logging
 import requests
+import nlp as nlp
 
 from flask import Flask, render_template
 
@@ -58,7 +59,7 @@ def reached_end_of_terms():
     return reached
 
 def is_answer_correct(user_answer, correct_answer):
-    return True
+    return nlp.isCorrect(correct_answer, user_answer) # Order matters, this is better than nlp.isCorrect(user_answer, correct_answer)
 
 def get_current_term():
     current_index = session.attributes["current_term_index"]
