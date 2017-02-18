@@ -42,13 +42,14 @@ def process_answer_intent(user_answer):
     message = None
     if correct:
         message = "Correct!"
-        if reached_end_of_terms():
-            message += " You've reviewed all the terms."
-        else:
-            message += " Let's move on. "
-            message += ask_next_term_message()
     else:
         message = render_template("incorrect_answer", term=current_term["term"], definition=current_term["definition"])
+
+    if reached_end_of_terms():
+        message += " You've reviewed all the terms."
+    else:
+        message += " Let's move on. "
+        message += ask_next_term_message()
 
     return question(message)
 
