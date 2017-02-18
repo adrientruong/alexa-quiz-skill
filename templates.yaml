@@ -1,0 +1,2 @@
+welcome: Welcome to AutoQuiz. What would you like to be quizzed on?
+verify: You asked to be quizzed on the class {{course}} and on chapter {{chapter}}
