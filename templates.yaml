@@ -1,2 +1,6 @@
 welcome: Welcome to AutoQuiz. What would you like to be quizzed on?
-verify: You asked to be quizzed on the class {{course}} and on chapter {{chapter}}
+verify: You will be quizzed on the set titled {{setTitle}}
+check_ready: Ok. I found a quiz title {{title}}. Are you ready?
+ask_definition: Explain {{term}}
+incorrect_answer: That was incorrect. {{term}} is defined as {{definition}}
+correct_answer_ask_next: Correct! Let's move on. Explain {{term}}
