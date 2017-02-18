@@ -3,6 +3,7 @@ import math
 import numpy as np
 import time
 import sys
+import re
 
 def generate():
     parser = argparse.ArgumentParser()
@@ -107,8 +108,10 @@ universe = {}
 total = sum(counts)
 average = float(total) / len(counts)
 def isCorrect(words1, words2):
-    input_sentence_1 = words1.lower().split(' ')
-    input_sentence_2 = words2.lower().split(' ')
+    input_sentence_1 = re.sub(" +", ' ', re.sub("[^a-z0-9' ]", ' ', words1.lower())).strip().split(' ')
+    input_sentence_2 = re.sub(" +", ' ', re.sub("[^a-z0-9' ]", ' ', words2.lower())).strip().split(' ')
+    print input_sentence_1
+    print input_sentence_2
     additions = 0.0
     score = 0.0
     
