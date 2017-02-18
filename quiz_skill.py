@@ -30,23 +30,34 @@ def quiz(course, chapter):
 @ask.intent("AMAZON.YesIntent")
 def actually_start_quiz():
     session.attributes["current_term_index"] = -1
-    return ask_next_term()
+    return question(ask_next_term_message())
 
-@ask.intent("AnswerIntent")
-def process_answer_intent():
+@ask.intent("AnswerIntent", mapping={"user_answer": "Answer"})
+def process_answer_intent(user_answer):
     current_term = get_current_term()
-    # Orien's algo goes here
-    correct = True
+    correct_answer = current_term["definition"]
+    correct = is_answer_correct(user_answer, correct_answer)
 
     message = None
     if correct:
-        message = render_template("correct_answer")
+        message = "Correct!"
+        if reached_end_of_terms():
+            message += " You've reviewed all the terms."
+        else:
+            message += " Let's move on. "
+            message += ask_next_term_message()
     else:
         message = render_template("incorrect_answer", term=current_term["term"], definition=current_term["definition"])
 
-    return statement(message)
+    return question(message)
 
-def is_answer_correct(userAnswer, correctAnswer):
+def reached_end_of_terms():
+    chapter_set = session.attributes["set"]
+    current_index = session.attributes["current_term_index"]
+    reached = len(chapter_set["terms"]) == current_index + 1
+    return reached
+
+def is_answer_correct(user_answer, correct_answer):
     return True
 
 def get_current_term():
@@ -56,18 +67,21 @@ def get_current_term():
 
     return term
 
-def ask_next_term():
+def ask_next_term_message():
     current_index = session.attributes["current_term_index"]
     current_index += 1
+    session.attributes["current_term_index"] = current_index
 
-    return ask_term(current_index)
+    return ask_term_message(current_index)
 
-def ask_term(index):
+def ask_term_message(index, prefix=""):
     chapter_set = session.attributes["set"]
-    current_term = chapter_set["terms"][current_index]["term"]
-    message = render_template("ask_definition", term=current_term)
+    current_term = chapter_set["terms"][index]["term"]
+    if len(prefix) != 0:
+        prefix += " "
+    message = prefix + render_template("ask_definition", term=current_term)
 
-    return question(message)
+    return message
 
 def quizlet_get(url, params={}):
     params["client_id"] = client_id
@@ -80,7 +94,6 @@ def get_set(course, chapter):
     r = quizlet_get("https://api.quizlet.com/2.0/search/groups", params=params)
     course_group = None
     for group in r.json()["classes"]:
-        print group["name"]
         if "Stanford" in group["school"]["name"]:
             course_group = group
             break
