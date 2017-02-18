@@ -93,23 +93,27 @@ def get_set(course, chapter):
         "q": course
     }
     r = quizlet_get("https://api.quizlet.com/2.0/search/groups", params=params)
-    course_group = None
+    course_groups = []
     for group in r.json()["classes"]:
         if "Stanford" in group["school"]["name"]:
-            course_group = group
-            break
+            course_groups.append(group)
 
-    if course_group is None:
+    if len(course_groups) == 0:
         print "uh oh spaghettio. could not find group for course"
         return
 
-    group_id = course_group["id"]
-    r = quizlet_get("https://api.quizlet.com/2.0/groups/{}/sets".format(group_id))
-
     chapter_set = None
-    for group_set in r.json():
-        if chapter in group_set["title"]:
-            chapter_set = group_set
+    for course_group in course_groups:
+
+        group_id = course_group["id"]
+        r = quizlet_get("https://api.quizlet.com/2.0/groups/{}/sets".format(group_id))
+
+        for group_set in r.json():
+            if chapter in group_set["title"]:
+                chapter_set = group_set
+                break
+
+        if chapter_set is not None:
             break
 
     if chapter_set is None:
