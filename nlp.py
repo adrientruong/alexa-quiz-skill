@@ -166,16 +166,19 @@ def getMp3(text):
     try:
         stream = None
         logging.basicConfig(level=logging.DEBUG)
-        # print('TTS:{}'.format(text))
+        print('TTS:{}'.format(text))
         speech = bing.synthesize(text, stream=stream)
         wav = bing.to_wav(speech)
         open('x.wav', 'w').write(wav)
         wav = 'x.wav'
-        cmd = 'lame --preset insane %s' % wav
+        cmd = 'ffmpeg -i x.wav -ac 2 -codec:a libmp3lame -b:a 48k -ar 16000 x.mp3'
+        #cmd = 'lame --preset insane %s' % wav
+        subprocess.call('rm -f x.mp3', shell=True)
         subprocess.call(cmd, shell=True)
         return 'x.mp3'
     except:
         print "fail"
         pass
 
-# getMp3('Estas escuchando una prueba del sistema TTS con la voz de %s como demostracion de la gran utilidad de poder convertir un texto en voz real.')
+#getMp3('Estas escuchando una prueba del sistema TTS con la voz de %s como demostracion de la gran utilidad de poder convertir un texto en voz real.')
+#getMp3(raw_input())

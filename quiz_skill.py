@@ -59,7 +59,12 @@ def quizCourseCategoryIntent(course_prefix, course_number, category):
 @ask.intent("AMAZON.YesIntent")
 def actually_start_quiz():
     session.attributes["current_term_index"] = -1
-    return question(ask_next_term_message())
+
+    message = ask_next_term_message()
+    if session.attributes["foreign_language_mode"]:
+        message = "<speak>{}</speak>".format(message)
+
+    return question(message)
 
 @ask.intent("AnswerIntent", mapping={"user_answer": "Answer"})
 def process_answer_intent(user_answer):
@@ -72,19 +77,29 @@ def process_answer_intent(user_answer):
 
     print("User answered: " + user_answer)
 
-    message = None
+    message = ""
+    if session.attributes["foreign_language_mode"]:
+        message = "<speak>"
+
     if correct:
-        message = "Correct!"
+        message += "Correct!"
     else:
-        message = render_template("incorrect_answer", term=current_term["term"], definition=current_term["definition"])
+        message += render_template("incorrect_answer", term=current_term["term"], definition=current_term["definition"])
 
     if reached_end_of_terms():
         message += " You've reviewed all the terms."
+
+        if session.attributes["foreign_language_mode"]:
+            message += "</speak>"
+
         return statement(message)
     else:
         message += " Let's move on. "
         ask_next_message = ask_next_term_message()
         message += ask_next_message
+
+        if session.attributes["foreign_language_mode"]:
+            message += "</speak>"
 
         return question(message).reprompt("I didn't get that. " + ask_next_message)
 
@@ -118,8 +133,12 @@ def ask_term_message(index, prefix=""):
         prefix += " "
 
     if session.attributes["foreign_language_mode"]:
-        google_link = "https://translate.google.com/translate_tts?tl=es&amp;q=quiero&amp;client=tw-ob.mp3"
-        message = "<speak><audio src=\"{}\"/></speak>".format(google_link)
+        audio_src = nlp.getMp3(current_term.encode("utf-8"))
+        if audio_src is None:
+            message = "Sorry. Something went wrong."
+        else:
+            absolute_src = "https://83c9522b.ngrok.io/" + audio_src
+            message = "<audio src=\"{}\"/>".format(absolute_src)
     else:
         message = prefix + render_template("ask_definition", term=current_term)
 
