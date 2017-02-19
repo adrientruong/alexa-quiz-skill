@@ -1,13 +1,17 @@
 import argparse
+import timeit
+import logging
 import math
 import numpy as np
 import time
 import sys
 import re
 import json
+import bing as b
 from watson_developer_cloud import AlchemyLanguageV1
 
 alchemy_language = AlchemyLanguageV1(api_key='65c86442fcf992a2dbedd5d4a4bee9937cecc006')
+bing = b.BingSpeechAPI()
 
 def generate():
     parser = argparse.ArgumentParser()
@@ -126,7 +130,6 @@ total = sum(counts)
 average = float(total) / len(counts)
 
 def getScore(words1, words2):
-    words1 = re.sub("\(.*?\)", "", words1)
     print "words1 now ", words1
     input_sentence_1 = re.sub(" +", ' ', re.sub("[^a-z0-9' ]", ' ', words1.lower())).strip().split(' ')
     input_sentence_2 = re.sub(" +", ' ', re.sub("[^a-z0-9' ]", ' ', words2.lower())).strip().split(' ')
@@ -151,8 +154,24 @@ def getScore(words1, words2):
 
 
 def isCorrect(words1, words2):
+    words1 = re.sub("\(.*?\)", "", words1)
     score1 = getScore(words1, words2)
     score2, total = getConceptScore(words1, words2)
     score = (score1 + score2) / (1.0 + total)
     print score1, score2, score
     return score > 0.6
+
+def getWav(text):
+    stream = None
+    logging.basicConfig(level=logging.DEBUG)
+
+    try:
+        # print('TTS:{}'.format(text))
+        speech = bing.synthesize(text, stream=stream)
+        wav = bing.to_wav(speech)
+        open('x.wav', 'w').write(wav)
+        return wav
+    except:
+        print "fail"
+        pass
+
