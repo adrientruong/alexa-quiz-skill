@@ -3,3 +3,5 @@ verify: You will be quizzed on the set titled {{setTitle}}.
 check_ready: Ok. I found a quiz title {{title}}. Are you ready?
 ask_definition: Explain {{term}}.
 incorrect_answer: That was incorrect. {{term}} is defined as {{definition}}.
+error_finding_chapter_set: Sorry, I could not find a flashcard set for {{course}} chapter {{chapter}}.
+error_finding_category_set: Sorry, I could not find a flashcard set for {{course}} category {{category}}.

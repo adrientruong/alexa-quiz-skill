@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 ask = Ask(app, "/")
 
-logging.getLogger("flask_ask").setLevel(logging.DEBUG)
+#logging.getLogger("flask_ask").setLevel(logging.DEBUG)
 
 client_id = "2zMq3XjUTE"
 
@@ -20,11 +20,35 @@ def new_quiz():
 
     return question(welcome_msg)
 
-@ask.intent("QuizMe", mapping={"course": "Class", "chapter": "Chapter"})
-def quiz(course, chapter):
+@ask.intent("QuizCourseChapterIntent", mapping={"course_prefix": "CoursePrefix", "course_number": "CourseNumber", "chapter": "Chapter"})
+def quizCourseChapterIntent(course_prefix, course_number, chapter):
+    course = course_prefix + " " + course_number
+    print course
     chapter_set = get_set(course, chapter)
+
+    if chapter_set is None:
+        return statement(render_template("error_finding_chapter_set", course=course, chapter=chapter))
+
     session.attributes["set"] = chapter_set
     message = render_template("check_ready", title=chapter_set["title"])
+
+    print message
+
+    return question(message)
+
+@ask.intent("QuizCourseCategoryIntent", mapping={"course_prefix": "CoursePrefix", "course_number": "CourseNumber", "category": "Category"})
+def quizCourseCategoryIntent(course_prefix, course_number, category):
+    course = course_prefix + " " + course_number
+    print course_number
+    chapter_set = get_set(course, category)
+
+    if chapter_set is None:
+        return statement(render_template("error_finding_category_set", course=course, category=category))
+
+    session.attributes["set"] = chapter_set
+    message = render_template("check_ready", title=chapter_set["title"])
+
+    print message
 
     return question(message)
 
@@ -89,38 +113,37 @@ def quizlet_get(url, params={}):
     params["client_id"] = client_id
     return requests.get(url, params)
 
-def get_set(course, chapter):
+def get_set_from_group(course, keyword, group_id):
+    r = quizlet_get("https://api.quizlet.com/2.0/groups/{}/sets".format(group_id))
+    keyword = keyword.lower()
+    for group_set in r.json():
+        title = group_set["title"].lower()
+        if title is not None:
+            print title
+        if title is not None and keyword in title:
+            return group_set
+
+    return None
+
+def get_set(course, keyword):
     params = {
         "q": course
     }
     r = quizlet_get("https://api.quizlet.com/2.0/search/groups", params=params)
-    course_groups = []
+    flashcard_set = None
     for group in r.json()["classes"]:
-        if "Stanford" in group["school"]["name"]:
-            course_groups.append(group)
+        if "school" in group and "name" in group["school"] and "Stanford" in group["school"]["name"]:
+            group_id = group["id"]
+            flashcard_set = get_set_from_group(course, keyword, group_id)
 
-    if len(course_groups) == 0:
-        print "uh oh spaghettio. could not find group for course"
-        return
-
-    chapter_set = None
-    for course_group in course_groups:
-
-        group_id = course_group["id"]
-        r = quizlet_get("https://api.quizlet.com/2.0/groups/{}/sets".format(group_id))
-
-        for group_set in r.json():
-            if chapter in group_set["title"]:
-                chapter_set = group_set
+            if flashcard_set is not None:
                 break
 
-        if chapter_set is not None:
-            break
+    if flashcard_set is None:
+        print("ERROR: Could not find set for course: " + course + " and keyword: " + keyword)
+        return
 
-    if chapter_set is None:
-        print "uh oh spaghettio. could not find set for chapter"
-
-    return chapter_set
+    return flashcard_set
 
 if __name__ == "__main__":
     app.run(debug=True)
