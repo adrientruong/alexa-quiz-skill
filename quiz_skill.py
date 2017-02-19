@@ -20,9 +20,12 @@ def new_quiz():
 
     return question(welcome_msg)
 
-@ask.intent("QuizCourseChapterIntent", mapping={"course_prefix": "CoursePrefix", "course_number": "CourseNumber", "chapter": "Chapter"})
-def quizCourseChapterIntent(course_prefix, course_number, chapter):
+@ask.intent("QuizCourseChapterIntent", mapping={"course_prefix": "CoursePrefix", "course_number": "CourseNumber", "course_letter": "CourseLetter", "chapter": "Chapter"})
+def quizCourseChapterIntent(course_prefix, course_number, course_letter, chapter):
     course = course_prefix + " " + course_number
+    if course_letter is not None:
+        course += course_letter
+
     print course
     chapter_set = get_set(course, chapter)
 
@@ -45,6 +48,7 @@ def quizCourseCategoryIntent(course_prefix, course_number, category):
     if chapter_set is None:
         return statement(render_template("error_finding_category_set", course=course, category=category))
 
+    session.attributes["foreign_language_mode"] = True
     session.attributes["set"] = chapter_set
     message = render_template("check_ready", title=chapter_set["title"])
 
@@ -59,9 +63,14 @@ def actually_start_quiz():
 
 @ask.intent("AnswerIntent", mapping={"user_answer": "Answer"})
 def process_answer_intent(user_answer):
+    if user_answer is None:
+        return question("I didn't get that. Could you repeat yourself?")
+
     current_term = get_current_term()
     correct_answer = current_term["definition"]
     correct = is_answer_correct(user_answer, correct_answer)
+
+    print("User answered: " + user_answer)
 
     message = None
     if correct:
@@ -71,11 +80,13 @@ def process_answer_intent(user_answer):
 
     if reached_end_of_terms():
         message += " You've reviewed all the terms."
+        return statement(message)
     else:
         message += " Let's move on. "
-        message += ask_next_term_message()
+        ask_next_message = ask_next_term_message()
+        message += ask_next_message
 
-    return question(message)
+        return question(message).reprompt("I didn't get that. " + ask_next_message)
 
 def reached_end_of_terms():
     chapter_set = session.attributes["set"]
@@ -105,7 +116,12 @@ def ask_term_message(index, prefix=""):
     current_term = chapter_set["terms"][index]["term"]
     if len(prefix) != 0:
         prefix += " "
-    message = prefix + render_template("ask_definition", term=current_term)
+
+    if session.attributes["foreign_language_mode"]:
+        google_link = "https://translate.google.com/translate_tts?tl=es&amp;q=quiero&amp;client=tw-ob.mp3"
+        message = "<speak><audio src=\"{}\"/></speak>".format(google_link)
+    else:
+        message = prefix + render_template("ask_definition", term=current_term)
 
     return message
 
