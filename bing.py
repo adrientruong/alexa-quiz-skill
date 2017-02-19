@@ -87,7 +87,7 @@ class BingSpeechAPI:
 
             self.expire_time = start_time + expiry_seconds
 
-    def recognize(self, audio_data, language="en-US", show_all=False):
+    def recognize(self, audio_data, language="es-ES", show_all=False):
         self.authenticate()
         if isinstance(audio_data, types.GeneratorType):
             def generate(audio):
@@ -132,7 +132,7 @@ class BingSpeechAPI:
             raise ValueError('Unexpected response: {}'.format(result))
         return result["header"]["lexical"]
 
-    def synthesize(self, text, language="en-US", gender="Female", stream=None, chunk_size=4096):
+    def synthesize(self, text, language="es-ES", gender="Female", stream=None, chunk_size=4096):
         self.authenticate()
 
         if language not in self.locales.keys():
@@ -148,7 +148,7 @@ class BingSpeechAPI:
 
         service_name = lang[gender]
 
-        body = "<speak version='1.0' xml:lang='en-us'>\
+        body = "<speak version='1.0' xml:lang='es-ES'>\
                 <voice xml:lang='%s' xml:gender='%s' name='%s'>%s</voice>\
                 </speak>" % (language, gender, service_name, text)
 
@@ -214,7 +214,7 @@ def main():
             print('TTS:{}'.format(text))
             speech = bing.synthesize(text, stream=stream)
             print type(speech)
-            text = bing.recognize(speech, language='en-US')
+            text = bing.recognize(speech, language='es-ES')
             print('STT:{}'.format(text.encode('utf-8')))
             print('Stream mode:{}'.format('yes' if stream else 'no'))
         except RequestError as e:

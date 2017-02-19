@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 import timeit
 import logging
 import math
@@ -161,17 +162,20 @@ def isCorrect(words1, words2):
     print score1, score2, score
     return score > 0.6
 
-def getWav(text):
-    stream = None
-    logging.basicConfig(level=logging.DEBUG)
-
+def getMp3(text):
     try:
+        stream = None
+        logging.basicConfig(level=logging.DEBUG)
         # print('TTS:{}'.format(text))
         speech = bing.synthesize(text, stream=stream)
         wav = bing.to_wav(speech)
         open('x.wav', 'w').write(wav)
-        return wav
+        wav = 'x.wav'
+        cmd = 'lame --preset insane %s' % wav
+        subprocess.call(cmd, shell=True)
+        return 'x.mp3'
     except:
         print "fail"
         pass
 
+# getMp3('Estas escuchando una prueba del sistema TTS con la voz de %s como demostracion de la gran utilidad de poder convertir un texto en voz real.')
