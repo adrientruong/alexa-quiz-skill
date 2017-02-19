@@ -32,6 +32,7 @@ def quizCourseChapterIntent(course_prefix, course_number, course_letter, chapter
     if chapter_set is None:
         return statement(render_template("error_finding_chapter_set", course=course, chapter=chapter))
 
+    session.attributes["foreign_language_mode"] = False
     session.attributes["set"] = chapter_set
     message = render_template("check_ready", title=chapter_set["title"])
 
@@ -58,7 +59,8 @@ def quizCourseCategoryIntent(course_prefix, course_number, category):
 
 @ask.intent("AMAZON.YesIntent")
 def actually_start_quiz():
-    session.attributes["current_term_index"] = -1
+    if "current_term_index" not in session.attributes:
+        session.attributes["current_term_index"] = -1
 
     message = ask_next_term_message()
     if session.attributes["foreign_language_mode"]:
@@ -87,7 +89,7 @@ def process_answer_intent(user_answer):
         message += render_template("incorrect_answer", term=current_term["term"], definition=current_term["definition"])
 
     if reached_end_of_terms():
-        message += " You've reviewed all the terms."
+        message += " You have reviewed all the terms."
 
         if session.attributes["foreign_language_mode"]:
             message += "</speak>"
@@ -101,7 +103,16 @@ def process_answer_intent(user_answer):
         if session.attributes["foreign_language_mode"]:
             message += "</speak>"
 
-        return question(message).reprompt("I didn't get that. " + ask_next_message)
+        reprompt_message = "<speak>I didn't get that." + message[:6]
+        return question(message).reprompt(reprompt_message)
+
+@ask.intent("TellMeMoreIntent")
+def tell_me_more_intent():
+    current_term = get_current_term()
+    more_info = get_more_info()
+
+    message = more_info + " Ready for the next question?"
+    return question(message)
 
 def reached_end_of_terms():
     chapter_set = session.attributes["set"]
@@ -155,7 +166,7 @@ def get_set_from_group(course, keyword, group_id):
         title = group_set["title"].lower()
         if title is not None:
             print title
-        if title is not None and keyword in title:
+        if title is not None and " " + keyword in title:
             return group_set
 
     return None

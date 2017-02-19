@@ -153,7 +153,6 @@ def getScore(words1, words2):
     score /= additions 
     return score
 
-
 def isCorrect(words1, words2):
     words1 = re.sub("\(.*?\)", "", words1)
     score1 = getScore(words1, words2)
@@ -171,7 +170,7 @@ def getMp3(text):
         wav = bing.to_wav(speech)
         open('x.wav', 'w').write(wav)
         wav = 'x.wav'
-        cmd = 'ffmpeg -i x.wav -ac 2 -codec:a libmp3lame -b:a 48k -ar 16000 x.mp3'
+        cmd = 'ffmpeg -i x.wav -ac 2 -codec:a libmp3lame -b:a 48k -ar 16000 -af volume=10dB x.mp3'
         #cmd = 'lame --preset insane %s' % wav
         subprocess.call('rm -f x.mp3', shell=True)
         subprocess.call(cmd, shell=True)
