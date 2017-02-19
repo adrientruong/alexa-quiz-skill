@@ -4,6 +4,10 @@ import numpy as np
 import time
 import sys
 import re
+import json
+from watson_developer_cloud import AlchemyLanguageV1
+
+alchemy_language = AlchemyLanguageV1(api_key='65c86442fcf992a2dbedd5d4a4bee9937cecc006')
 
 def generate():
     parser = argparse.ArgumentParser()
@@ -103,15 +107,30 @@ def getMultiplier(word1, counts, vocab, average):
     else:
         return 1.0/math.log(average, 2)
 
+def getConceptScore(words1, words2):
+    try:
+        keywords = alchemy_language.keywords(text=words1)
+        if (not keywords or not 'keywords' in keywords or len(keywords['keywords']) <= 1):
+            return (0.0, 0.0)
+        words = ''
+        for keyword in keywords['keywords']:
+            words += keyword['text'] + ' '
+        print "You said: ", words
+        return (getScore(words, words2), 1.0)
+    except:
+        return (0.0, 0.0)
+
 W, vocab, ivocab, counts = generate()
 universe = {}
 total = sum(counts)
 average = float(total) / len(counts)
-def isCorrect(words1, words2):
+
+def getScore(words1, words2):
+    words1 = re.sub("\(.*?\)", "", words1)
+    print "words1 now ", words1
     input_sentence_1 = re.sub(" +", ' ', re.sub("[^a-z0-9' ]", ' ', words1.lower())).strip().split(' ')
     input_sentence_2 = re.sub(" +", ' ', re.sub("[^a-z0-9' ]", ' ', words2.lower())).strip().split(' ')
-    print input_sentence_1
-    print input_sentence_2
+    print "Comparing", input_sentence_1, "|", input_sentence_2
     additions = 0.0
     score = 0.0
     
@@ -128,6 +147,12 @@ def isCorrect(words1, words2):
         additions += getMultiplier(word, counts, vocab, average)
         # print word, b
     score /= additions 
-    print "score: " + str(score)
-    return score > 0.7
+    return score
 
+
+def isCorrect(words1, words2):
+    score1 = getScore(words1, words2)
+    score2, total = getConceptScore(words1, words2)
+    score = (score1 + score2) / (1.0 + total)
+    print score1, score2, score
+    return score > 0.6
