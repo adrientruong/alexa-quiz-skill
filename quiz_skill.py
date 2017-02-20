@@ -1,6 +1,7 @@
 import logging
 import requests
 import nlp as nlp
+import getMoreInfo as getMoreInfo
 
 from flask import Flask, render_template
 
@@ -57,16 +58,25 @@ def quizCourseCategoryIntent(course_prefix, course_number, category):
 
     return question(message)
 
+@ask.intent("AMAZON.NoIntent")
+def no_intent():
+    session.attributes["learn_more"] = False
+    return question(ask_next_term_message())
+
 @ask.intent("AMAZON.YesIntent")
 def actually_start_quiz():
     if "current_term_index" not in session.attributes:
         session.attributes["current_term_index"] = -1
 
-    message = ask_next_term_message()
-    if session.attributes["foreign_language_mode"]:
-        message = "<speak>{}</speak>".format(message)
+    if "learn_more" in session.attributes and session.attributes["learn_more"] == True:
+        session.attributes["learn_more"] = False
+        return tell_me_more()
+    else:
+        message = ask_next_term_message()
+        if session.attributes["foreign_language_mode"]:
+            message = "<speak>{}</speak>".format(message)
 
-    return question(message)
+        return question(message)
 
 @ask.intent("AnswerIntent", mapping={"user_answer": "Answer"})
 def process_answer_intent(user_answer):
@@ -87,6 +97,7 @@ def process_answer_intent(user_answer):
         message += "Correct!"
     else:
         message += render_template("incorrect_answer", term=current_term["term"], definition=current_term["definition"])
+        session.attributes["learn_more"] = True
 
     if reached_end_of_terms():
         message += " You have reviewed all the terms."
@@ -96,20 +107,23 @@ def process_answer_intent(user_answer):
 
         return statement(message)
     else:
-        message += " Let's move on. "
-        ask_next_message = ask_next_term_message()
-        message += ask_next_message
+        reprompt_message = "I didn't get that"
+        if correct:
+            message += " Let's move on. "
+            ask_next_message = ask_next_term_message()
+            message += ask_next_message
 
-        if session.attributes["foreign_language_mode"]:
-            message += "</speak>"
+            if session.attributes["foreign_language_mode"]:
+                message += "</speak>"
 
-        reprompt_message = "<speak>I didn't get that." + message[:6]
+            reprompt_message = "<speak>I didn't get that." + message[:6]
         return question(message).reprompt(reprompt_message)
 
-@ask.intent("TellMeMoreIntent")
-def tell_me_more_intent():
-    current_term = get_current_term()
-    more_info = get_more_info()
+def tell_me_more():
+    current_index = session.attributes["current_term_index"]
+    chapter_set = session.attributes["set"]
+    current_term = chapter_set["terms"][current_index]
+    more_info = getMoreInfo.getMoreInfo(current_term["term"], 2)
 
     message = more_info + " Ready for the next question?"
     return question(message)
@@ -166,7 +180,7 @@ def get_set_from_group(course, keyword, group_id):
         title = group_set["title"].lower()
         if title is not None:
             print title
-        if title is not None and " " + keyword in title:
+        if title is not None and keyword in title:
             return group_set
 
     return None

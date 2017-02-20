@@ -6,7 +6,6 @@ import fileinput
 index_disambig = -1;
 def main():
     #print('done')
-    nltk.download("punkt")
     print("Enter Input:")
     for line in fileinput.input():
         try:
@@ -15,6 +14,7 @@ def main():
             print("Invalid topic, try again!")
 
 def getMoreInfo(str, num_sentences):
+    nltk.download("punkt")
     global index_disambig
     index_disambig +=1
     try:
